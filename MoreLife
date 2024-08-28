@@ -1,0 +1,61 @@
+package MyGame;
+
+import GEngine.Rect;
+import java.awt.Graphics;
+import java.awt.Image;
+/**
+ * MoreLife defines object that...
+ * @author ELIRAN MIMOUN | 12/05/2024
+ */
+public class MoreLife extends Rect
+{
+    // Attributes תכונות
+    private double dy;
+    // Methoods פעולות
+
+    public MoreLife(double x, double y, double width, double height,double dy)
+    {
+        super(x, y, width, height);
+        this.dy =dy;
+    }
+
+    public void move()
+    {
+        super.setY(super.getY() + dy);
+    }
+
+    public double getX()
+    {
+        return super.getX();
+    }
+
+    public void setX(double x)
+    {
+        super.setX(x);
+    }
+
+    public double getY()
+    {
+        return super.getY();
+    }
+
+    public void setY(double y)
+    {
+        super.setY(y);
+    }
+
+    public double getDy()
+    {
+        return dy;
+    }
+
+    public void setDy(double dy)
+    {
+        this.dy = dy;
+    }
+
+    public void draw(Graphics g,Image img)
+    {
+        g.drawImage(img, (int) getX(), (int) getY(), null);
+    }
+}
