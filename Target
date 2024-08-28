@@ -1,0 +1,151 @@
+package MyGame;
+
+import GEngine.Rect;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+
+/**
+ * Target defines object that...
+ * @author ELIRAN MIMOUN| 15/04/2024
+ */
+public class Target extends Rect 
+{
+    // Attributes תכונות
+    private int count;
+    private Image imgRed;
+    private Image imgBlue;
+    private Image imgYellow;
+    private Image imgBlueSkye;
+    private Image imgGreen;
+    // Methoods פעולות
+
+    public Target(double x, double y, double width, double height, int count)
+    {
+        super(x, y, width, height);
+        this.count = count;
+        
+        try
+        {
+            imgRed = ImageIO.read(getClass().getResource("/assets/RedTarget.png"));
+            imgRed = imgRed.getScaledInstance((int)width, (int)height, Image.SCALE_SMOOTH);
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image for target!");
+        }
+        
+        try
+        {
+            imgBlue = ImageIO.read(getClass().getResource("/assets/BlueTarget.png"));
+            imgBlue = imgBlue.getScaledInstance((int)width, (int)height, Image.SCALE_SMOOTH);
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image for target!");
+        }
+        
+        try
+        {
+            imgYellow = ImageIO.read(getClass().getResource("/assets/YellowTarget.png"));
+            imgYellow = imgYellow.getScaledInstance((int)(width), (int)(height), Image.SCALE_SMOOTH);
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image for target!");
+        }
+        
+        try
+        {
+            imgBlueSkye = ImageIO.read(getClass().getResource("/assets/BlueSkyeTarget.png"));
+            imgBlueSkye = imgBlueSkye.getScaledInstance((int)(width), (int)(height), Image.SCALE_SMOOTH);
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image for target!");
+        }
+        
+        try
+        {
+            imgGreen = ImageIO.read(getClass().getResource("/assets/greenTarget.png"));
+            imgGreen = imgGreen.getScaledInstance((int)(width), (int)(height), Image.SCALE_SMOOTH);
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image for target!");
+        }
+    }
+
+    
+    public double getX()
+    {
+        return super.getX();
+    }
+
+    public void setX(double x)
+    {
+        super.setX(x);
+    }
+
+    public double getY()
+    {
+        return super.getY();
+    }
+
+    public void setY(double y)
+    {
+        super.setY(y);
+    }
+
+    public double getWidth()
+    {
+        return super.getWidth();
+    }
+
+    public void setWidth(double width)
+    {
+        super.setWidth(width);
+    }
+
+    public double getHeight()
+    {
+        return super.getHeight();
+    }
+
+    public void setHeight(double height)
+    {
+        super.setHeight(height);
+    }
+
+    public int getCount()
+    {
+        return count;
+    }
+
+    public void setCount(int count)
+    {
+        this.count = count;
+    }
+    
+    public void draw(Graphics g)
+    {
+        // ציור קוו היקפי כהה
+        if(this.count == 5)
+        {
+            g.drawImage(imgGreen,(int)getX(), (int)getY(), null);
+        }
+        else if (this.count == 4)        
+        {
+            g.drawImage(imgBlueSkye,(int)getX(), (int)getY(), null);
+        } 
+        else if (this.count == 3)        
+        {
+            g.drawImage(imgRed,(int)getX(), (int)getY(), null);
+        } else if(this.count == 2)
+        {
+            g.drawImage(imgBlue,(int)getX(), (int)getY(), null);
+        }
+        else if(this.count == 1)
+        {
+            g.drawImage(imgYellow,(int)getX(), (int)getY(), null);
+        }
+//        g.setColor(color);
+//        g.fillRect((int) x, (int) y, (int)width, (int)height);
+    }
+}
