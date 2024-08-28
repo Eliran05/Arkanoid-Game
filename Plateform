@@ -1,0 +1,111 @@
+package MyGame;
+
+import GEngine.Rect;
+import java.awt.Graphics;
+import java.awt.Image;
+
+/**
+ * Platform defines object that...
+ * @author User | 18/03/2024
+ */
+public class Platforme extends Rect
+{
+    // Attributes תכונות
+    private double dx, dy;      //
+    private static final double MOVE_SPEED = 10;
+
+    public Platforme(double x, double y, double width, double height)
+    {
+        super(x, y, width, height);
+    }
+    
+    // Methoods פעולות
+ 
+    public double getX()
+    {
+        return super.getX();
+    }
+
+    public void setX(double x)
+    {
+        super.setX(x);
+    }
+
+    public double getY()
+    {
+        return super.getY();
+    }
+
+    public void setY(double y)
+    {
+        super.setY(y);
+    }
+
+    public double getWidth()
+    {
+        return super.getWidth();
+    }
+
+    public void setWidth(double width)
+    {
+        super.setWidth(width);
+    }
+
+    public double getHeight()
+    {
+        return super.getHeight();
+    }
+
+    public void setHeight(double height)
+    {
+        super.setHeight(height);
+    }
+
+    public double getDx()
+    {
+        return dx;
+    }
+
+    public void setDx(double dx)
+    {
+        this.dx = dx;
+    }
+
+    public double getDy()
+    {
+        return dy;
+    }
+
+    public void setDy(double dy)
+    {
+        this.dy = dy;
+    }
+    
+    public void draw(Graphics g, Image img)
+    {
+        g.drawImage(img,(int)getX(), (int)getY(), null);
+    }
+    
+    public void move()
+    {
+        super.setX(super.getX() + dx);
+        super.setY(super.getY() + dy);
+    }
+    
+    public void moveLeft()
+    {
+        setDx(-MOVE_SPEED);
+        move();
+
+        if (getX() <=0)
+            setX(0);
+    }
+
+    public void moveRight(int cw)
+    {
+        setDx(MOVE_SPEED);
+        move();
+        if (getX() + getWidth() >= cw)
+            setX(cw - getWidth());
+    }
+}
