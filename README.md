@@ -1,2 +1,754 @@
 # Arkanoid-Game
 Arkanoid Game W Gengine
+
+package MyGame;
+
+import GEngine.Sound;
+import GEngine.GEngine;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
+import javax.imageio.ImageIO;
+
+/**
+ * ArkanoidGame defines object that...
+ * @author Eliran Mimoun | 20/05/2024
+ */
+public class ArkanoidGame extends GEngine
+{
+    public enum GameState
+    {
+        MENU,
+        PAUSE,
+        RUNNING,
+        FINISH
+    }
+
+    // Attributes תכונות
+    private Platforme platform;
+    private Bullet bullet;
+    private ArrayList<Target> listTarget;
+    private MoreLife Morelife;
+
+    private boolean helpShow = false;
+
+    private Image imgMenu;
+    private Image imgGame;
+    private Image imgLifeBig;
+    private Image imgLifeSmall;
+    private Image imgP;
+
+    //sound
+    private Sound soundMusic, platformSound, startSound, GameOverSound, EndingSound, TargetSound;
+    private boolean OnOffSound = true;
+    private boolean endingSoundPlayed;
+    private boolean gameoverSoundPlayed;
+
+    static boolean TimerStart = false;
+
+    // for game logic
+    private GameState gameState;
+    private boolean ballInGame;
+    //BulletSpeedY * 0.35 = BulletSpeedX
+    static final double BulletSpeedY = -7;
+    static final double BulletSpeedX = 2.45;
+    static final double MoreLifeSpeed = 3.75;
+    static int level;
+    static int score;
+    static int life;
+    static boolean MoreLifeInGame = false;
+    static boolean Success = false;
+    static boolean GameLose = false;
+    private boolean MouseIn;
+
+    //Timer
+    private int elapsedTime;
+    private int timer;
+
+    // Methoods פעולות
+    public ArkanoidGame(int width, int height)
+    {
+        super(width, height, "Arkanoid");
+
+        canvas.addKeyListener(keyboard);
+        canvas.addMouseListener(mouse);
+        canvas.addMouseMotionListener(mouse);
+
+        loadsAssets();
+
+        init();
+
+        initLevel();
+    }
+
+    private void init()
+    {
+        platform = new Platforme(getcanvasWidth() / 2 - 40, getcanvasheight() - 32, 110, 10);
+        bullet = new Bullet(getcanvasWidth() / 2 + (int) (platform.getWidth() / 6), getcanvasheight() - 47, 15, Color.BLUE);
+        listTarget = new ArrayList();
+        GameLose = false;
+        Success = false;
+        endingSoundPlayed = false;
+        gameoverSoundPlayed = false;
+        score = 0;
+        level = 0;
+        life = 3;
+        timer = 0;
+        ballInGame = false;
+        MouseIn = false;
+        gameState = GameState.MENU;
+    }
+
+    private void initLevel()
+    {
+        if (level == 1)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    Random random = new Random();
+                    Target target = new Target(60 + (j * 100), 70 + (i * 55), 75, 40, random.nextInt(3) + 1);
+                    listTarget.add(target);
+                }
+            }
+        } else if (level == 2)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    Random random = new Random();
+                    Target target = new Target(85 + (j * 110), 90 + (i * 55), 85, 40, random.nextInt(4) + 1);
+                    listTarget.add(target);
+                }
+            }
+        } else if (level == 3)
+        {
+            int height = 7;
+
+            for (int i = 0; i < (height / 2) + 1; i++)
+            {
+                int width = height - (2 * i);
+                int xOffset = (height - width) / 2;
+
+                for (int j = 0; j < width; j++)
+                {
+                    Random random = new Random();
+                    Target target = new Target(60 + ((j + xOffset) * 100), 70 + (i * 55), 85, 40, random.nextInt(5) + 1);
+                    listTarget.add(target);
+                }
+            }
+            for (int i = height / 2 - 1; i >= 0; i--)
+            {
+                int width = height - (2 * i);
+                int xOffset = (height - width) / 2;
+
+                for (int j = 0; j < width; j++)
+                {
+                    Random random = new Random();
+                    Target target = new Target(60 + ((j + xOffset) * 100), 70 + ((height - i - 1) * 55), 85, 40, random.nextInt(5) + 1);
+                    listTarget.add(target);
+                }
+            }
+
+        }
+    }
+
+    @Override
+    public void update()
+    {
+        checkSound();
+        switch (gameState)
+        {
+            case MENU:
+                //Start the Game
+                menu();
+                break;
+
+            case RUNNING:
+
+                //FINISH ?
+                checkFinish();
+
+                //Pause
+                pause();
+
+                //Update Timer
+                updateTimer();
+
+                //Mouse Event
+                checkMouseEventUpdate();
+
+                //Keyboard Event
+                checkKeyBoardEventsUpdate();
+
+                //Chek All Ball Logic
+                checkAllBallLOgic();
+
+                //More Life Logic
+                moreLifeLogic();
+
+                //Next Level ?
+                checkNextLevel();
+
+                break;
+
+            case PAUSE:
+                pause();
+                break;
+
+            case FINISH:
+                //Return to the Menu or Restart Game
+                finishGame();
+                break;
+        }
+    }
+
+    @Override
+    public void draw(Graphics g)
+    {
+        switch (gameState)
+        {
+            case MENU:
+                drawMenu(g);
+                break;
+            case RUNNING:
+                drawRunnig(g);
+                break;
+            case PAUSE:
+                drawRunnig(g);
+                break;
+            case FINISH:
+                drawFinish(g);
+                break;
+        }
+        //Show Help
+        drawHelp(g);
+
+        //Game Lose
+        drawGameLose(g);
+
+    }
+
+    //
+    private void gameover()
+    {
+        bullet.setLocation(getcanvasWidth() / 2 + (int) (platform.getWidth() / 8), getcanvasheight() - 47);
+        platform.setX(getcanvasWidth() / 2 - 40);
+        platform.setY(getcanvasheight() - 32);
+        bullet.setVelocity(0, 0);
+        ballInGame = false;
+    }
+
+    private void loadsAssets()
+    {
+        soundMusic = new Sound("/assets/GameLoop.wav");
+        platformSound = new Sound("/assets/PlatformSound.wav");
+        startSound = new Sound("/assets/GameStart.wav");
+        GameOverSound = new Sound("/assets/GameOver.wav");
+        EndingSound = new Sound("/assets/Ending.wav");
+        TargetSound = new Sound("/assets/TargetTouch.wav");
+
+        try
+        {
+            imgMenu = ImageIO.read(getClass().getResource("/assets/Arkanoid.png"));
+            imgMenu = imgMenu.getScaledInstance((int) getcanvasWidth(), (int) getcanvasheight(), Image.SCALE_SMOOTH);
+            System.out.println("Menu image loaded successfully.");
+
+            imgGame = ImageIO.read(getClass().getResource("/assets/Galaxie1.jpg"));
+            imgGame = imgGame.getScaledInstance((int) getcanvasWidth(), (int) getcanvasheight(), Image.SCALE_SMOOTH);
+            System.out.println("Game background image loaded successfully.");
+
+            imgLifeBig = ImageIO.read(getClass().getResource("/assets/Life1.png"));
+            imgLifeBig = imgLifeBig.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            System.out.println("Life image loaded successfully.");
+
+            imgLifeSmall = ImageIO.read(getClass().getResource("/assets/Life1.png"));
+            imgLifeSmall = imgLifeSmall.getScaledInstance(35, 35, Image.SCALE_SMOOTH);
+            System.out.println("Life image loaded successfully.");
+
+            imgP = ImageIO.read(getClass().getResource("/assets/Plateform.png"));
+            imgP = imgP.getScaledInstance(110 - 7, 20, Image.SCALE_SMOOTH);
+            System.out.println("Platform image loaded successfully.");
+        } catch (IOException ex)
+        {
+            System.out.println("Error read image!" + ex.getMessage());
+        }
+
+    }
+
+    private void checkColisionWThePlatform()
+    {
+        if (platform.getX() <= bullet.getX() + bullet.getRadius()
+                && platform.getX() + platform.getWidth() >= bullet.getX() + bullet.getRadius()
+                && platform.getY() == bullet.getY() + bullet.getRadius())
+        {
+            bullet.setVelocity(bullet.getDx(), BulletSpeedY);
+            platformSound.play();
+        }
+
+    }
+
+    private void checkColisionWTarget()
+    {
+        ArrayList<Target> targetsToRemove = new ArrayList<>();
+        for (Target target : listTarget)
+        {
+            double ballLeft = bullet.getX() - bullet.getRadius();
+            double ballRight = bullet.getX() + bullet.getRadius();
+            double ballTop = bullet.getY() - bullet.getRadius();
+            double ballBottom = bullet.getY() + bullet.getRadius();
+
+            double targetLeft = target.getX();
+            double targetRight = target.getX() + target.getWidth();
+            double targetTop = target.getY();
+            double targetBottom = target.getY() + target.getHeight();
+
+            // Check if the ball hit the target
+            if (ballRight > targetLeft && ballLeft < targetRight && ballBottom > targetTop && ballTop < targetBottom)
+            {
+                // Determine which side of the target was hit
+                double overlapLeft = ballRight - targetLeft;
+                double overlapRight = targetRight - ballLeft;
+                double overlapTop = ballBottom - targetTop;
+                double overlapBottom = targetBottom - ballTop;
+
+                boolean collisionOnXAxis = Math.min(overlapLeft, overlapRight) < Math.min(overlapTop, overlapBottom);
+
+                if (collisionOnXAxis)
+                {
+                    // Collision on the left or right side
+                    bullet.setVelocity(bullet.getDx() * -1, bullet.getDy());
+                } else
+                {
+                    // Collision on the top or bottom side
+                    bullet.setVelocity(bullet.getDx(), bullet.getDy() * -1);
+                }
+
+                // Reduce targets hit count and if (is equal to 0) -> remove it.
+                removeTarget(targetsToRemove, target);
+            }
+        }
+        listTarget.removeAll(targetsToRemove);
+    }
+
+    private void removeTarget(ArrayList<Target> targetsToRemove, Target target)
+    {
+        target.setCount(target.getCount() - 1);
+        if (target.getCount() <= 0)
+        {
+            if (life <= 3)
+            {
+                Random random = new Random();
+                int rand = random.nextInt(6) + 1;
+                if (rand == 2)
+                {
+                    if (!MoreLifeInGame)
+                    {
+                        MoreLifeInGame = true;
+                        Morelife = new MoreLife(target.getX() + (target.getWidth() / 2),
+                                target.getY(), 35, 35, MoreLifeSpeed);
+                    }
+                }
+            }
+            targetsToRemove.add(target);
+            score += 10;
+            // Play sound effect
+            TargetSound.play();
+        }
+    }
+
+    private boolean checkColisionLifeWPlatform()
+    {
+        if (MoreLifeInGame)
+        {
+            if (Morelife.getY() + Morelife.getHeight() >= platform.getY()
+                    && Morelife.getX() + Morelife.getWidth() >= platform.getX()
+                    && Morelife.getX() <= platform.getX() + platform.getWidth()
+                    && Morelife.getY() <= platform.getY() + platform.getHeight())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateTimer()
+    {
+        elapsedTime++;
+        if (elapsedTime % TARGET_FPS == 0)
+        {
+            timer++;
+        }
+    }
+
+    private void checkKeyBoardEventsUpdate()
+    {
+        if (keyboard.keyDown(KeyEvent.VK_SPACE))
+        {
+            if (level > 0)
+            {
+                if (!ballInGame)
+                {
+                    bullet.setVelocity(BulletSpeedX, BulletSpeedY);
+                }
+                ballInGame = true;
+            }
+        } else if (keyboard.keyDown(KeyEvent.VK_LEFT))
+        {
+            MouseIn = false;
+            platform.moveLeft();
+            if (!ballInGame)
+            {
+                bullet.setX(platform.getX() + platform.getWidth() / 2);
+            }
+        } else if (keyboard.keyDown(KeyEvent.VK_RIGHT))
+        {
+            MouseIn = false;
+            platform.moveRight(getcanvasWidth());
+            if (!ballInGame)
+            {
+                bullet.setX(platform.getX() + platform.getWidth() / 2);
+            }
+        }
+        
+        //Show Help
+        if (keyboard.keyDownOnce(KeyEvent.VK_F1))
+        {
+            helpShow = !helpShow;
+        }
+
+        //EXIT
+        if (keyboard.keyDown(KeyEvent.VK_ESCAPE))
+        {
+            init();
+            return;
+        }
+    }
+
+    private void checkMouseEventUpdate()
+    {
+        if (gameState == GameState.RUNNING)
+        {
+            if (mouse.buttonDownOnce(MouseEvent.BUTTON1))
+            {
+                MouseIn = true;
+            }
+            if (MouseIn)
+            {
+                if (mouse.getX() >= 0 && mouse.getX() <= getcanvasWidth() && mouse.getY() >= 0 && mouse.getY() <= getcanvasheight())
+                {
+                    platform.setX(mouse.getX() - platform.getWidth() / 2);
+                    if (platform.getX() < 0)
+                    {
+                        platform.setX(0);
+                    } else if (platform.getX() + platform.getWidth() > getcanvasWidth())
+                    {
+                        platform.setX(getcanvasWidth() - platform.getWidth());
+                    }
+
+                    if (!ballInGame)
+                    {
+                        bullet.setX(platform.getX() + platform.getWidth() / 2);
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkAllBallLOgic()
+    {
+        //Move Ball
+        bullet.move(getcanvasWidth(), getcanvasheight());
+
+        //CheckLose
+        if (bullet.getY() - bullet.getRadius() >= getcanvasheight() + 500)
+        {
+            platform.setX(getcanvasWidth() / 2 - platform.getWidth() / 2);
+            bullet.setX(platform.getX() + platform.getWidth() / 2);
+            bullet.setY(getcanvasheight() - 47);
+            bullet.setVelocity(0, 0);
+            ballInGame = false;
+            life -= 1;
+        }
+
+        //Check All Ball Colisions
+        if (ballInGame)
+        {
+            checkColisionWThePlatform();
+            checkColisionWTarget();
+        }
+
+    }
+
+    private void moreLifeLogic()
+    {
+        if (MoreLifeInGame && Morelife.getY() + Morelife.getHeight() >= getcanvasheight() + Morelife.getHeight())
+        {
+            MoreLifeInGame = false;
+        }
+        if (MoreLifeInGame)
+        {
+            Morelife.move();
+        }
+        if (checkColisionLifeWPlatform())
+        {
+            MoreLifeInGame = false;
+            Morelife.setDy(0);
+            life++;
+        }
+    }
+
+    private void checkNextLevel()
+    {
+        if (listTarget.size() == 0 && level > 0 && level <= 3)
+        {
+            level++;
+            gameover();
+            if (level > 3)
+            {
+                Success = true;
+                gameover();
+            } else
+            {
+                initLevel();
+            }
+        }
+    }
+
+    private void pause()
+    {
+        if (keyboard.keyDownOnce(KeyEvent.VK_P))
+        {
+            if (gameState == GameState.PAUSE)
+            {
+                gameState = GameState.RUNNING;
+            } else if (gameState == GameState.RUNNING)
+            {
+                gameState = GameState.PAUSE;
+            }
+        }
+    }
+
+    private void checkFinish()
+    {
+        if (level > 3)
+        {
+            gameState = GameState.FINISH;
+            return;
+        }
+        if (life == 0)
+        {
+            gameState = GameState.FINISH;
+            GameLose = true;
+            gameover();
+        }
+    }
+
+    private void finishGame()
+    {
+        if (keyboard.keyDown(KeyEvent.VK_ESCAPE))
+        {
+            init();
+            return;
+        }
+        if (keyboard.keyDown(KeyEvent.VK_ENTER))
+        {
+            init();
+            level = 1;
+            initLevel();
+            gameState = GameState.RUNNING;
+        }
+    }
+
+    private void menu()
+    {
+        if (keyboard.keyDownOnce(KeyEvent.VK_F1))
+        {
+            helpShow = !helpShow;
+        }
+        if (keyboard.keyDown(KeyEvent.VK_ENTER))
+        {
+            init();
+            level++;
+            initLevel();
+            gameState = GameState.RUNNING;
+        }
+    }
+
+    private void drawMenu(Graphics g)
+    {
+        g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 40));
+        g.drawImage(imgMenu, 0, 0, null);
+        g.setColor(Color.BLACK);
+        g.drawString("Press Enter to Play!", 150, 170);
+    }
+
+    private void drawRunnig(Graphics g)
+    {
+        g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 30));
+        g.drawImage(imgGame, 0, 0, null);
+        for (int i = 0; i < life; i++)
+        {
+            g.drawImage(imgLifeBig, 130 + (i * 50), 25, null);
+        }
+
+        for (int i = 0; i < listTarget.size(); i++)
+        {
+            listTarget.get(i).draw(g);
+        }
+
+        //Draw Timer
+        g.setColor(Color.WHITE);
+        String timeString = "Timer: " + timer + " s";
+        int stringWidth = g.getFontMetrics().stringWidth(timeString);
+        int x = (getcanvasWidth() - stringWidth + 90) / 2;
+        int y = 50;
+        g.drawString(timeString, x, y);
+
+        if (MoreLifeInGame)
+        {
+            Morelife.draw(g, imgLifeSmall);
+        }
+
+        platform.draw(g, imgP);
+
+        bullet.setColor(Color.BLUE);
+        bullet.draw(g);
+        g.setColor(Color.WHITE);
+        g.drawString("Score : " + score, getcanvasWidth() - 200, 50);
+
+        g.setColor(Color.PINK);
+        g.drawString("Life : ", 20, 50);
+    }
+
+    private void drawFinish(Graphics g)
+    {
+        g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 30));
+        g.drawImage(imgGame, 0, 0, null);
+        for (int i = 0; i < life; i++)
+        {
+            g.drawImage(imgLifeBig, 130 + (i * 50), 25, null);
+        }
+        if (Success)
+        {
+            g.setColor(Color.YELLOW);
+            g.drawString("Congratulation You win!", 190, 200);
+            g.setColor(Color.CYAN);
+            g.drawString("Press Enter to Restart", 210, 270);
+            g.setColor(Color.RED);
+            g.drawString("Press ESC to Return to the Menu ", 120, 350);
+        }
+
+        //Draw Timer
+        g.setColor(Color.BLUE);
+        int x2 = (getcanvasWidth() - 180) / 2;
+        int y2 = 30;
+        g.drawString("Timer: " + timer + " s", x2, y2);
+
+        platform.draw(g, imgP);
+
+        bullet.setColor(Color.BLUE);
+        bullet.draw(g);
+        g.setColor(Color.WHITE);
+        g.drawString("Score : " + score, getcanvasWidth() - 200, 50);
+
+        g.setColor(Color.PINK);
+        g.drawString("Life : ", 20, 50);
+    }
+
+    private void drawHelp(Graphics g)
+    {
+        if (helpShow)
+        {
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 40));
+            g.setColor(Color.white);
+            g.drawString("F1 - show/hide this help.", 100, 300);
+            g.drawString("Space key - launche the Bullet.", 70, 330);
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 28));
+            g.drawString("Arrow keys (left,right)-move Plateform.", 60, 360);
+            g.drawString("Press \"P\" for Pause the game ", 150, 400);
+            g.drawString("Press The Mouse To use It", 150, 450);
+            g.drawString("Press \"S\" to Stop the Music", 125, 500);
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 40));
+            g.setColor(Color.red);
+            g.drawString("Finish 3 level for the WIN.", 100, 550);
+        }
+    }
+
+    private void drawGameLose(Graphics g)
+    {
+        if (GameLose)
+        {
+            g.setColor(Color.red);
+            g.drawString("Game Over , try Again!", 200, 200);
+            g.setColor(Color.GREEN);
+            g.drawString("Press Enter to Restart",200, 250);
+            g.drawString("And ESC to Return to the Menu",150, 290);
+        }
+    }
+
+    private void checkSound()
+    {
+        if (keyboard.keyDownOnce(KeyEvent.VK_S))
+        {
+            OnOffSound = !OnOffSound;
+        }
+        
+        if (OnOffSound)
+        {
+            switch (gameState)
+            {
+                case MENU:
+                    GameOverSound.stop();
+                    EndingSound.stop();
+                    soundMusic.stop();
+                    startSound.playLoop();
+                    break;
+                case RUNNING:
+                    GameOverSound.stop();
+                    EndingSound.stop();
+                    startSound.stop();
+                    soundMusic.playLoop();
+                    break;
+                case FINISH:
+                    if(Success && !endingSoundPlayed){
+                    soundMusic.stop();
+                    GameOverSound.stop();
+                    startSound.stop();
+                    EndingSound.play();
+                    endingSoundPlayed= true;
+                    }
+                    else if(GameLose && !gameoverSoundPlayed){
+                    soundMusic.stop();
+                    EndingSound.stop();
+                    startSound.stop();
+                    GameOverSound.play();
+                    gameoverSoundPlayed = true;
+                    }
+                    break;
+            }
+        } else
+        {
+            GameOverSound.stop();
+            EndingSound.stop();
+            soundMusic.stop();
+            startSound.stop();
+        }
+
+    }
+
+    public static void main(String[] args)
+    {
+        ArkanoidGame arkanoid = new ArkanoidGame(800, 600);
+        arkanoid.start();
+        System.out.println("main finished");
+    }
+}
