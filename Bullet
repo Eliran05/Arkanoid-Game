@@ -1,0 +1,139 @@
+package MyGame;
+
+import GEngine.Oval;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Image;
+
+/**
+ * Oval is circle object that can be drawn on Graphics Surface.
+ * @author ELIRAN MIMOUN | 29/02/2024
+ */
+public class Bullet extends Oval
+{
+    // Attributes תכונות
+    private double dx, dy;      // ball velocity (direction & speed) for movment 
+    private Image img;
+
+    // Methoods פעולות
+    /**
+     * Construct a Ball
+     * @param cx coordinate x of ball location (center point)
+     * @param cy coordinate y of ball location (center point)
+     * @param radius ball radius
+     * @param color ball color
+     */
+    public Bullet(double x, double y, double radius, Color color)
+    {
+        super(x, y, radius, color);
+    }
+
+    public void draw(Graphics g)
+    {
+        // ציור קוו היקפי כהה
+        // g.drawImage(img,(int)getX(), (int)getY(), null);
+        g.setColor(getColor());
+        g.fillOval((int) (super.getX() - super.getRadius()), (int) (super.getY() - super.getRadius()),
+                 2 * (int) super.getRadius(), 2 * (int) super.getRadius());
+    }
+
+    public double getX()
+    {
+        return super.getX();
+    }
+
+    public void setX(double x)
+    {
+        super.setX(x);
+    }
+
+    public double getY()
+    {
+        return super.getY();
+    }
+
+    public void setY(double y)
+    {
+        super.setY(y);
+    }
+
+    public void setLocation(double x, double y)
+    {
+        super.setX(x);
+        super.setY(y);
+    }
+
+    public double getRadius()
+    {
+        return super.getRadius();
+    }
+
+    public void setRadius(int radius)
+    {
+        super.setRadius(radius);
+    }
+
+    public Color getColor()
+    {
+        return super.getColor();
+    }
+
+    public void setColor(Color color)
+    {
+        super.setColor(color);
+    }
+
+    public void setDx(double dx)
+    {
+        this.dx = dx;
+    }
+
+    public void setDy(double dy)
+    {
+        this.dy = dy;
+    }
+
+    public double getDx()
+    {
+        return dx;
+    }
+
+    public double getDy()
+    {
+        return dy;
+    }
+
+    public void setVelocity(double dx, double dy)
+    {
+        setDx(dx);
+        setDy(dy);
+    }
+
+    public void move(int cw, int ch)
+    {
+        super.setX(super.getX() + dx);
+        super.setY(super.getY() + dy);
+
+        if ((super.getX() - super.getRadius()) < 0 || (super.getX() + super.getRadius()) > cw)
+        {
+            dx = -dx;
+        }
+
+        if ((super.getY() - super.getRadius()) < 0)
+        {
+            dy = -dy;
+        }
+    }
+
+    public void move()
+    {
+        super.setX(super.getX() + dx);
+        super.setY(super.getY() + dy);
+    }
+
+    public void moveBy(double tx, double ty)
+    {
+        super.setX(super.getX()+tx);
+        super.setY(super.getY()+ty);
+    }
+}
